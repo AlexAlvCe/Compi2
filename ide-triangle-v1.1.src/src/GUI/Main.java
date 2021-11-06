@@ -115,6 +115,7 @@ public class Main extends javax.swing.JFrame {
         x.setSize(540, 250);
         x.setSourcePaneText(contents);
         x.setPreviousSize(contents.length());
+        x.setPreviousText(contents);
         desktopPane.add(x);        
         x.setVisible(true);
         
@@ -603,7 +604,6 @@ public class Main extends javax.swing.JFrame {
         if ((!((FileFrame)desktopPane.getSelectedFrame()).getPreviouslySaved()) || ((FileFrame)desktopPane.getSelectedFrame()).hasChanged()) {
             saveMenuItemActionPerformed(null);
         }
-        
         if (((FileFrame)desktopPane.getSelectedFrame()).getPreviouslySaved()) {
             ((FileFrame)desktopPane.getSelectedFrame()).selectConsole();
             ((FileFrame)desktopPane.getSelectedFrame()).clearConsole();
@@ -615,12 +615,12 @@ public class Main extends javax.swing.JFrame {
             output.setDelegate(delegateConsole);            
             if (compiler.compileProgram(desktopPane.getSelectedFrame().getTitle())) {           
                 output.setDelegate(delegateTAMCode);
-                disassembler.Disassemble(desktopPane.getSelectedFrame().getTitle().replace(".tri", ".tam"));
+               // disassembler.Disassemble(desktopPane.getSelectedFrame().getTitle().replace(".tri", ".tam"));
                 ((FileFrame)desktopPane.getSelectedFrame()).setTree((DefaultMutableTreeNode)treeVisitor.visitProgram(compiler.getAST(), null));
-                ((FileFrame)desktopPane.getSelectedFrame()).setTable(tableVisitor.getTable(compiler.getAST()));
+                //((FileFrame)desktopPane.getSelectedFrame()).setTable(tableVisitor.getTable(compiler.getAST()));
                 
-                runMenuItem.setEnabled(true);
-                buttonRun.setEnabled(true);
+                runMenuItem.setEnabled(false);
+                buttonRun.setEnabled(false);
             } else {
                 ((FileFrame)desktopPane.getSelectedFrame()).highlightError(compiler.getErrorPosition());
                 runMenuItem.setEnabled(false);
@@ -666,6 +666,7 @@ public class Main extends javax.swing.JFrame {
             ((FileFrame)desktopPane.getSelectedFrame()).setTitle(fileName);            
             ((FileFrame)desktopPane.getSelectedFrame()).setPreviouslyModified(false);
             ((FileFrame)desktopPane.getSelectedFrame()).setPreviousSize(((FileFrame)desktopPane.getSelectedFrame()).getSourcePaneText().length());
+            ((FileFrame)desktopPane.getSelectedFrame()).setPreviousText(((FileFrame)desktopPane.getSelectedFrame()).getSourcePaneText());
                 
             saveMenuItem.setEnabled(false);
             buttonSave.setEnabled(false);

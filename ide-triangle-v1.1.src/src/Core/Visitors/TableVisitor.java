@@ -14,6 +14,10 @@ import Triangle.AbstractSyntaxTrees.BinaryOperatorDeclaration;
 import Triangle.AbstractSyntaxTrees.BoolTypeDenoter;
 import Triangle.AbstractSyntaxTrees.CallCommand;
 import Triangle.AbstractSyntaxTrees.CallExpression;
+import Triangle.AbstractSyntaxTrees.CaseLiteral;
+import Triangle.AbstractSyntaxTrees.CaseRange;
+import Triangle.AbstractSyntaxTrees.CasesCase;
+import Triangle.AbstractSyntaxTrees.CasesElse;
 import Triangle.AbstractSyntaxTrees.CharTypeDenoter;
 import Triangle.AbstractSyntaxTrees.CharacterExpression;
 import Triangle.AbstractSyntaxTrees.CharacterLiteral;
@@ -26,6 +30,10 @@ import Triangle.AbstractSyntaxTrees.EmptyCommand;
 import Triangle.AbstractSyntaxTrees.EmptyExpression;
 import Triangle.AbstractSyntaxTrees.EmptyFormalParameterSequence;
 import Triangle.AbstractSyntaxTrees.ErrorTypeDenoter;
+import Triangle.AbstractSyntaxTrees.ForDo;
+import Triangle.AbstractSyntaxTrees.ForInCommand;
+import Triangle.AbstractSyntaxTrees.ForUntilCommand;
+import Triangle.AbstractSyntaxTrees.ForWhileCommand;
 import Triangle.AbstractSyntaxTrees.FuncActualParameter;
 import Triangle.AbstractSyntaxTrees.FuncDeclaration;
 import Triangle.AbstractSyntaxTrees.FuncFormalParameter;
@@ -43,14 +51,17 @@ import Triangle.AbstractSyntaxTrees.MultipleFieldTypeDenoter;
 import Triangle.AbstractSyntaxTrees.MultipleFormalParameterSequence;
 import Triangle.AbstractSyntaxTrees.MultipleRecordAggregate;
 import Triangle.AbstractSyntaxTrees.Operator;
+import Triangle.AbstractSyntaxTrees.Pro_funcs;
 import Triangle.AbstractSyntaxTrees.ProcActualParameter;
 import Triangle.AbstractSyntaxTrees.ProcDeclaration;
 import Triangle.AbstractSyntaxTrees.ProcFormalParameter;
 import Triangle.AbstractSyntaxTrees.Program;
 import Triangle.AbstractSyntaxTrees.RecordExpression;
 import Triangle.AbstractSyntaxTrees.RecordTypeDenoter;
+import Triangle.AbstractSyntaxTrees.SelectCommand;
 import Triangle.AbstractSyntaxTrees.SequentialCommand;
 import Triangle.AbstractSyntaxTrees.SequentialDeclaration;
+import Triangle.AbstractSyntaxTrees.SequentialDeclarationNnary;
 import Triangle.AbstractSyntaxTrees.SimpleTypeDenoter;
 import Triangle.AbstractSyntaxTrees.SimpleVname;
 import Triangle.AbstractSyntaxTrees.SingleActualParameterSequence;
@@ -64,10 +75,13 @@ import Triangle.AbstractSyntaxTrees.UnaryExpression;
 import Triangle.AbstractSyntaxTrees.UnaryOperatorDeclaration;
 import Triangle.AbstractSyntaxTrees.VarActualParameter;
 import Triangle.AbstractSyntaxTrees.VarDeclaration;
+import Triangle.AbstractSyntaxTrees.VarDeclarationEXP;
 import Triangle.AbstractSyntaxTrees.VarFormalParameter;
 import Triangle.AbstractSyntaxTrees.Visitor;
 import Triangle.AbstractSyntaxTrees.VnameExpression;
 import Triangle.AbstractSyntaxTrees.WhileCommand;
+import Triangle.AbstractSyntaxTrees.compoundDeclLocal;
+import Triangle.AbstractSyntaxTrees.compoundDeclRecursive;
 import Triangle.CodeGenerator.Field;
 import Triangle.CodeGenerator.KnownAddress;
 import Triangle.CodeGenerator.KnownRoutine;
@@ -113,10 +127,11 @@ public class TableVisitor implements Visitor {
   }
   
   public Object visitIfCommand(IfCommand ast, Object o) { 
-      ast.E.visit(this, null);
-      ast.C1.visit(this, null);
-      ast.C2.visit(this, null);
-      
+      for (int i=0;i<ast.E.size();i++) {
+          ast.E.get(i).visit(this, null);
+          ast.C.get(i).visit(this, null);
+      }
+      ast.C.get(ast.C.size()-1).visit(this, null);
       return(null);
   }
   
@@ -622,4 +637,123 @@ public class TableVisitor implements Visitor {
   // <editor-fold defaultstate="collapsed" desc=" Attributes ">
     private DefaultTableModel model;
     // </editor-fold>
+
+    @Override
+    public Object visitForDoCommand(ForDo ast, Object o) {
+        ast.I.visit(this, null);
+        ast.E1.visit(this, null);
+        ast.E2.visit(this, null);
+        ast.C1.visit(this, null);
+      return(null);
+    }
+
+    @Override
+    public Object visitForWhileCommand(ForWhileCommand ast, Object o) {
+        ast.I.visit(this, null);
+        ast.E1.visit(this, null);
+        ast.E2.visit(this, null);
+        ast.E3.visit(this, null);
+        ast.C1.visit(this, null);
+        
+      return(null);
+    }
+   
+    @Override
+    public Object visitForInCommand(ForInCommand ast, Object o) {
+        ast.I.visit(this, null);
+        ast.E.visit(this, null);
+        ast.C.visit(this, null);
+        
+      return(null);    
+    }
+
+    @Override
+    public Object visitCaseRange(CaseRange ast, Object o) {
+        ast.T1.visit(this, null);
+        ast.T2.visit(this, null);
+        ast.C.visit(this, null);
+        return(null); 
+        
+    }
+
+    @Override
+    public Object visitCaseLiteral(CaseLiteral ast, Object o) {
+        ast.T.visit(this, null);
+        ast.C.visit(this, null);
+        return(null);
+    }
+
+    @Override
+    public Object visitCasesElse(CasesElse ast, Object o) {
+        for (int i=0;i<ast.listC.size();i++) {
+            ast.listC.get(i).visit(this, null);
+        }
+        ast.C2.visit(this, null);
+        return(null);
+    }
+
+    @Override
+    public Object visitSelectCommand(SelectCommand ast, Object o) {
+        ast.E.visit(this, null);
+        ast.C.visit(this, null);
+        return(null);
+    }
+
+    @Override
+    public Object visitCasesCase(CasesCase ast, Object o) {
+        for (int i=0;i<ast.listC.size();i++) {
+            ast.listC.get(i).visit(this, null);
+        }
+           return(null);
+    }
+
+    @Override
+    public Object visitVarDeclarationEXP(VarDeclarationEXP ast, Object o) {
+        ast.I.visit(this, null);
+        ast.E.visit(this, null);
+        return(null);
+    }
+
+    @Override
+    public Object visitPro_funcs(Pro_funcs ast, Object o) {
+        for (int i=0;i<ast.L.size();i++) {
+            ast.L.get(i).visit(this, null);
+        }
+           return(null);
+    }
+
+    @Override
+    public Object visitcompoundDeclRecursive(compoundDeclRecursive ats, Object o) {
+         ats.P.visit(this, null);
+        
+        return(null);
+    }
+
+    @Override
+    public Object visitcompoundDeclLocal(compoundDeclLocal ast, Object o) {
+        ast.D1.visit(this, null);
+        ast.D2.visit(this, null);
+        
+        return(null);
+    }
+
+    @Override
+    public Object visitSequentialDeclarationNnary(SequentialDeclarationNnary ast, Object o) {
+        ast.D1.visit(this, null);
+        for (int i=0;i<ast.LD.size();i++) {
+            ast.LD.get(i).visit(this, null);
+        }
+           return(null);
+    }
+
+    @Override
+    public Object visitForUntilCommand(ForUntilCommand ast, Object o) {
+        ast.I.visit(this, null);
+        ast.E1.visit(this, null);
+        ast.E2.visit(this, null);
+        ast.E3.visit(this, null);
+        ast.C1.visit(this, null);
+        
+      return(null);
+    }
 }

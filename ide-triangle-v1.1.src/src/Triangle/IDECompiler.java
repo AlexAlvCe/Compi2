@@ -13,6 +13,8 @@ import Triangle.AbstractSyntaxTrees.Program;
 import Triangle.SyntacticAnalyzer.Parser;
 import Triangle.ContextualAnalyzer.Checker;
 import Triangle.CodeGenerator.Encoder;
+import Triangle.TreeWriterHTML.Writer;
+import java.io.*;
 
 
 
@@ -53,16 +55,20 @@ public class IDECompiler {
         
         rootAST = parser.parseProgram();
         if (report.numErrors == 0) {
-            System.out.println("Contextual Analysis ...");
-            Checker checker = new Checker(report);
-            checker.check(rootAST);
+            String file =sourceName.substring(0,sourceName.length()-3)+"xml";
+            Writer w = new Writer(file);
+            w.write(rootAST);
+            System.out.println("xml created in : "+ file);
+           //System.out.println("Contextual Analysis ...");
+            //Checker checker = new Checker(report);
+            //checker.check(rootAST);
             if (report.numErrors == 0) {
-                System.out.println("Code Generation ...");
-                Encoder encoder = new Encoder(report);
-                encoder.encodeRun(rootAST, false);
+               // System.out.println("Code Generation ...");
+                //Encoder encoder = new Encoder(report);
+                //encoder.encodeRun(rootAST, false);
                 
                 if (report.numErrors == 0) {
-                    encoder.saveObjectProgram(sourceName.replace(".tri", ".tam"));
+                  //  encoder.saveObjectProgram(sourceName.replace(".tri", ".tam"));
                     success = true;
                 }
             }
@@ -73,6 +79,20 @@ public class IDECompiler {
         else
             System.out.println("Compilation was unsuccessful.");
         
+        // Html
+        String file = sourceName.substring(0,sourceName.length()-3)+"html";
+        HtmlGenerator htmlGenerator = new HtmlGenerator(sourceName); 
+        String html = htmlGenerator.buildFile();
+
+        File file2 = new File(file);
+        try{
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file2));
+            bw.write(html);
+            bw.close();
+        } catch (IOException ioe) {
+          ioe.printStackTrace();
+            System.out.println("Error al crear el HTML");
+        }
         return(success);
     }
       

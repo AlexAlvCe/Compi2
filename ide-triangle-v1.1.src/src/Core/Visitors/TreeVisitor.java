@@ -14,6 +14,11 @@ import Triangle.AbstractSyntaxTrees.BinaryOperatorDeclaration;
 import Triangle.AbstractSyntaxTrees.BoolTypeDenoter;
 import Triangle.AbstractSyntaxTrees.CallCommand;
 import Triangle.AbstractSyntaxTrees.CallExpression;
+import Triangle.AbstractSyntaxTrees.Case;
+import Triangle.AbstractSyntaxTrees.CaseLiteral;
+import Triangle.AbstractSyntaxTrees.CaseRange;
+import Triangle.AbstractSyntaxTrees.CasesCase;
+import Triangle.AbstractSyntaxTrees.CasesElse;
 import Triangle.AbstractSyntaxTrees.CharTypeDenoter;
 import Triangle.AbstractSyntaxTrees.CharacterExpression;
 import Triangle.AbstractSyntaxTrees.CharacterLiteral;
@@ -26,6 +31,10 @@ import Triangle.AbstractSyntaxTrees.EmptyCommand;
 import Triangle.AbstractSyntaxTrees.EmptyExpression;
 import Triangle.AbstractSyntaxTrees.EmptyFormalParameterSequence;
 import Triangle.AbstractSyntaxTrees.ErrorTypeDenoter;
+import Triangle.AbstractSyntaxTrees.ForDo;
+import Triangle.AbstractSyntaxTrees.ForInCommand;
+import Triangle.AbstractSyntaxTrees.ForUntilCommand;
+import Triangle.AbstractSyntaxTrees.ForWhileCommand;
 import Triangle.AbstractSyntaxTrees.FuncActualParameter;
 import Triangle.AbstractSyntaxTrees.FuncDeclaration;
 import Triangle.AbstractSyntaxTrees.FuncFormalParameter;
@@ -43,14 +52,17 @@ import Triangle.AbstractSyntaxTrees.MultipleFieldTypeDenoter;
 import Triangle.AbstractSyntaxTrees.MultipleFormalParameterSequence;
 import Triangle.AbstractSyntaxTrees.MultipleRecordAggregate;
 import Triangle.AbstractSyntaxTrees.Operator;
+import Triangle.AbstractSyntaxTrees.Pro_funcs;
 import Triangle.AbstractSyntaxTrees.ProcActualParameter;
 import Triangle.AbstractSyntaxTrees.ProcDeclaration;
 import Triangle.AbstractSyntaxTrees.ProcFormalParameter;
 import Triangle.AbstractSyntaxTrees.Program;
 import Triangle.AbstractSyntaxTrees.RecordExpression;
 import Triangle.AbstractSyntaxTrees.RecordTypeDenoter;
+import Triangle.AbstractSyntaxTrees.SelectCommand;
 import Triangle.AbstractSyntaxTrees.SequentialCommand;
 import Triangle.AbstractSyntaxTrees.SequentialDeclaration;
+import Triangle.AbstractSyntaxTrees.SequentialDeclarationNnary;
 import Triangle.AbstractSyntaxTrees.SimpleTypeDenoter;
 import Triangle.AbstractSyntaxTrees.SimpleVname;
 import Triangle.AbstractSyntaxTrees.SingleActualParameterSequence;
@@ -64,10 +76,14 @@ import Triangle.AbstractSyntaxTrees.UnaryExpression;
 import Triangle.AbstractSyntaxTrees.UnaryOperatorDeclaration;
 import Triangle.AbstractSyntaxTrees.VarActualParameter;
 import Triangle.AbstractSyntaxTrees.VarDeclaration;
+import Triangle.AbstractSyntaxTrees.VarDeclarationEXP;
 import Triangle.AbstractSyntaxTrees.VarFormalParameter;
 import Triangle.AbstractSyntaxTrees.Visitor;
 import Triangle.AbstractSyntaxTrees.VnameExpression;
 import Triangle.AbstractSyntaxTrees.WhileCommand;
+import Triangle.AbstractSyntaxTrees.compoundDeclLocal;
+import Triangle.AbstractSyntaxTrees.compoundDeclRecursive;
+import java.util.ArrayList;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 /**
@@ -101,7 +117,14 @@ public class TreeVisitor implements Visitor {
     }
     
     public Object visitIfCommand(IfCommand ast, Object obj) {
-        return(createTernary("If Command", ast.E, ast.C1, ast.C2));
+     ArrayList<AST> childs =  new ArrayList<>();
+     for (int i=0;i<ast.E.size();i++) {
+         childs.add(ast.E.get(i));
+          childs.add(ast.C.get(i));
+      }
+      childs.add(ast.C.get(ast.C.size()-1));
+ 
+       return(createNnary("If Command", childs));
     }
     
     public Object visitLetCommand(LetCommand ast, Object obj) {
@@ -436,5 +459,112 @@ public class TreeVisitor implements Visitor {
         
         return(t);             
     }
+    /**
+     * Creates a Nnary tree node.
+     * @param caption The tree's caption (text to be shown when the tree is drawn).
+     * @param childs
+     * @return The N node.
+     */
+    public DefaultMutableTreeNode createNnary(String caption, ArrayList<AST> childs) {
+        DefaultMutableTreeNode t = new DefaultMutableTreeNode(caption);
+        for (int i=0;i<childs.size();i++) {
+            t.add((DefaultMutableTreeNode)childs.get(i).visit(this, null));
+        }
+        return(t);        
+    }
     // </editor-fold>
+
+    @Override
+    public Object visitForDoCommand(ForDo ast, Object o) {
+        System.out.println("AHI VAMOS "+ ((IntegerExpression) ast.E2).IL.spelling);
+        return(createQuaternary("Repeat For DO", ast.I,ast.E1,ast.E2, ast.C1));
+    }
+
+    @Override
+    public Object visitForWhileCommand(ForWhileCommand ast, Object o) {
+        ArrayList<AST> childs = new ArrayList<>();
+        childs.add(ast.I);childs.add(ast.E1);childs.add(ast.E2);childs.add(ast.E3);childs.add(ast.C1);
+        return(createNnary("Repeat while", childs));
+    }
+   
+    @Override
+    public Object visitForInCommand(ForInCommand ast, Object o) {
+        return createTernary("Repeat For In", ast.I, ast.E, ast.C);
+    }
+
+    @Override
+    public Object visitCaseRange(CaseRange ast, Object o) {
+        return createTernary("Case range", ast.T1, ast.T2,ast.C);
+    }
+
+    @Override
+    public Object visitCaseLiteral(CaseLiteral ast, Object o) {
+        
+        return createBinary("Case literal", ast.T,ast.C);
+    }
+
+    @Override
+    public Object visitCasesElse(CasesElse ast, Object o) {
+        ArrayList<AST> list = new ArrayList<>();
+        for (int i=0;i<ast.listC.size();i++) {
+            list.add(ast.listC.get(i));
+        }
+        list.add(ast.C2);
+        return createNnary("Cases",list);
+    }
+
+    @Override
+    public Object visitSelectCommand(SelectCommand ast, Object o) {
+        return createBinary("Select ", ast.E, ast.C);
+    }
+
+    @Override
+    public Object visitCasesCase(CasesCase ast, Object o) {
+        ArrayList<AST> list = new ArrayList<>();
+        for (int i=0;i<ast.listC.size();i++) {
+            list.add(ast.listC.get(i));
+        }
+        return createNnary("Cases",list);
+    }
+
+    @Override
+    public Object visitVarDeclarationEXP(VarDeclarationEXP ast, Object o) {
+        return createBinary("Single declaration", ast.I, ast.E);
+    }
+
+    @Override
+    public Object visitPro_funcs(Pro_funcs ast, Object o) {
+         ArrayList<AST> list = new ArrayList<>();
+        for (int i=0;i<ast.L.size();i++) {
+            list.add(ast.L.get(i));
+        }
+        return createNnary("Pro-funcs", list);
+    }
+
+    @Override
+    public Object visitcompoundDeclRecursive(compoundDeclRecursive ats, Object o) {
+        return createUnary("Compound Declaraion recursive", ats.P);
+    }
+
+    @Override
+    public Object visitcompoundDeclLocal(compoundDeclLocal ast, Object o) {
+        return createBinary("Compound Declaraion local", ast.D1, ast.D2);
+    }
+
+    @Override
+    public Object visitSequentialDeclarationNnary(SequentialDeclarationNnary ast, Object o) {
+         ArrayList<AST> list = new ArrayList<>();
+         list.add(ast.D1);
+        for (int i=0;i<ast.LD.size();i++) {
+            list.add(ast.LD.get(i));
+        }
+        return createNnary("Sequencial Declaration", list);
+    }
+
+    @Override
+    public Object visitForUntilCommand(ForUntilCommand ast, Object o){
+        ArrayList<AST> childs = new ArrayList<>();
+        childs.add(ast.I);childs.add(ast.E1);childs.add(ast.E2);childs.add(ast.E3);childs.add(ast.C1);
+        return(createNnary("Repeat For Until", childs));
+    }
 }

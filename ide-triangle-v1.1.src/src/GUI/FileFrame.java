@@ -83,6 +83,13 @@ public class FileFrame extends javax.swing.JInternalFrame {
     public void setPreviousSize(int _previousSize) {
         previousSize = _previousSize;
     }
+    /**
+     * Sets the file prvious Text value.
+     * @param _previousText New value to be set.
+     */
+    public void setPreviousText(String _previousText) {
+        previousText = _previousText;
+    }
     
     /**
      * Sets the file as previously modified.
@@ -97,7 +104,7 @@ public class FileFrame extends javax.swing.JInternalFrame {
      * @return True if the file has changed.
      */
     public boolean hasChanged() {
-        if (previousSize != sourcePane.getText().length()) {
+        if (previousSize != sourcePane.getText().length() || !previousText.equals(sourcePane.getText())) {
             if (!previouslyModified)
                 previouslyModified = true;
         }        
@@ -397,6 +404,7 @@ public class FileFrame extends javax.swing.JInternalFrame {
     private boolean previouslySaved;        // Defines if the file has been previously saved
     private boolean previouslyModified;     // Defines if the file has been recently modified
     private int previousSize;               // The size of the file before being modified.    
+    private String previousText;               // The text of the file before being modified.    
     // [ End of Non-GUI Variables ]
     // </editor-fold>    
     
