@@ -424,7 +424,9 @@ Terminal parseCaseLiteral() throws SyntaxError {
             String r=retorno.variable;
         if (currentToken.kind == Token.LPAREN) {
           acceptIt();
+          if(currentToken.kind!= Token.RPAREN){
           ActualParameterSequence apsAST = parseActualParameterSequence();
+          System.err.println("token2:"+currentToken.kind);
           if( "putint".equals(r)&& declaraciones.containsKey(retorno.variable)){
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad <= profundidad){
@@ -436,7 +438,8 @@ Terminal parseCaseLiteral() throws SyntaxError {
               syntacticError("\"%\" cannot start a command","int expected here");
           }
           if(retorno.type == Token.IDENTIFIER){
-          if( declaraciones.containsKey(retorno.variable)){
+              
+          if( declaraciones.containsKey(retorno.variable)   ){
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad > profundidad){
                     syntacticError("\"%\" cannot start a command","variable not visible");
@@ -448,6 +451,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
           accept(Token.RPAREN);
           finish(commandPos);
           commandAST = new CallCommand(iAST, apsAST, commandPos);
+          }else{
+                ActualParameterSequence apsAST = parseActualParameterSequence();
+                accept(Token.RPAREN);
+                finish(commandPos);
+                commandAST = new CallCommand(iAST, apsAST, commandPos);
+          }
 
         } else {
 
@@ -694,6 +703,10 @@ Terminal parseCaseLiteral() throws SyntaxError {
     start(expressionPos);
     Variable aux= new Variable();
     expressionAST = parsePrimaryExpression();
+    if(retorno.type == Token.IDENTIFIER && !declaraciones.containsKey(retorno.variable)){
+      syntacticError(" Undeclared variable",
+        "");
+    }
     if (declaraciones.containsKey(retorno.variable)){
         aux= declaraciones.get(retorno.variable);
     }else{
@@ -702,8 +715,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
     while (currentToken.kind == Token.OPERATOR) {
       Operator opAST = parseOperator();
       Expression e2AST = parsePrimaryExpression();
+      if(retorno.type == Token.IDENTIFIER && !declaraciones.containsKey(retorno.variable)){
+            syntacticError("Undeclared variable",
+            "");
+      }
       if(retorno.type != aux.type){
-        syntacticError("\"%\" cannot start an expression",
+        syntacticError("\"%\" ",
         "Non congruent Types");
       }
       
