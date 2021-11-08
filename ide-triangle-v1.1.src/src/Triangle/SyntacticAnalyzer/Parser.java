@@ -101,10 +101,12 @@ import Triangle.AbstractSyntaxTrees.WhileCommand;
 import Triangle.AbstractSyntaxTrees.compoundDeclLocal;
 import Triangle.AbstractSyntaxTrees.compoundDeclRecursive;
 import java.util.ArrayList;
+import java.util.Hashtable;
 
 public class Parser {
-  public ArrayList<String> caracteresdisponibles =new ArrayList<>();
-  public Variable retorno;
+  public Hashtable<String,Variable> declaraciones = new Hashtable<>();
+  public Variable retorno =  new Variable();
+  public int profundidad=0;
   private Scanner lexicalAnalyser;
   private ErrorReporter errorReporter;
   private Token currentToken ;
@@ -199,6 +201,9 @@ public class Parser {
       previousTokenPosition = currentToken.position;
       String spelling = currentToken.spelling;
       IL = new IntegerLiteral(spelling, previousTokenPosition);
+      retorno.variable = spelling;
+      retorno.type = Token.INTLITERAL;
+      retorno.visibleAProfundidad=profundidad;
       currentToken = lexicalAnalyser.scan();
     } else {
       IL = null;
@@ -218,6 +223,9 @@ public class Parser {
       previousTokenPosition = currentToken.position;
       String spelling = currentToken.spelling;
       CL = new CharacterLiteral(spelling, previousTokenPosition);
+      retorno.variable = spelling;
+      retorno.type = Token.CHARLITERAL;
+      retorno.visibleAProfundidad=profundidad;
       currentToken = lexicalAnalyser.scan();
     } else {
       CL = null;
@@ -240,6 +248,9 @@ public class Parser {
       String spelling = currentToken.spelling;
       I = new Identifier(spelling, previousTokenPosition);
       currentToken = lexicalAnalyser.scan();
+        retorno.variable=spelling;
+        retorno.type = Token.IDENTIFIER;
+        retorno.visibleAProfundidad = profundidad;
     } else {
       I = null;
       syntacticError("identifier expected here", "");
@@ -410,11 +421,13 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.IDENTIFIER:
       {
         Identifier iAST = parseIdentifier();
-        
+            String r=retorno.variable;
         if (currentToken.kind == Token.LPAREN) {
           acceptIt();
           ActualParameterSequence apsAST = parseActualParameterSequence();
-        
+          if("putint".equals(r)&& retorno.type != Token.INTLITERAL){
+              syntacticError("\"%\" cannot start a command","int expected here");
+          }
           accept(Token.RPAREN);
           finish(commandPos);
           commandAST = new CallCommand(iAST, apsAST, commandPos);
@@ -436,10 +449,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.LET:
       {
         acceptIt();
+        profundidad++;
         Declaration dAST = parseDeclaration();
         accept(Token.IN);
         Command cAST = parseCommand();
         accept(Token.END);
+        profundidad--;
         finish(commandPos);
         commandAST = new LetCommand(dAST, cAST, commandPos);
       }
@@ -660,12 +675,21 @@ Terminal parseCaseLiteral() throws SyntaxError {
 
     SourcePosition expressionPos = new SourcePosition();
     start(expressionPos);
-
+    Variable aux= new Variable();
     expressionAST = parsePrimaryExpression();
-    
+    if (declaraciones.containsKey(retorno.variable)){
+        aux= declaraciones.get(retorno.variable);
+    }else{
+        aux = retorno;
+    }
     while (currentToken.kind == Token.OPERATOR) {
       Operator opAST = parseOperator();
       Expression e2AST = parsePrimaryExpression();
+      if(retorno.type != aux.type){
+        syntacticError("\"%\" cannot start an expression",
+        "Non congruent Types");
+      }
+      
       expressionAST = new BinaryExpression (expressionAST, opAST, e2AST,
         expressionPos);
     }
@@ -878,9 +902,14 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.CONST:
       {
         acceptIt();
+        Variable aux = new Variable();
         Identifier iAST = parseIdentifier();
+        aux.variable = retorno.variable;
+        aux.visibleAProfundidad = profundidad;
         accept(Token.IS);
         Expression eAST = parseExpression();
+        aux.type = retorno.type;
+        declaraciones.put(aux.variable,aux);
         finish(declarationPos);
         declarationAST = new ConstDeclaration(iAST, eAST, declarationPos);
       }
@@ -892,17 +921,26 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.VAR:
       {
         acceptIt();
+        Variable aux = new Variable();
         Identifier iAST = parseIdentifier();
+        aux.variable = retorno.variable;
+          
+        aux.visibleAProfundidad = profundidad;
         if (Token.COLON ==currentToken.kind ){
         accept(Token.COLON);
         TypeDenoter tAST = parseTypeDenoter();
-                           
+        if("Integer".equals(retorno.variable) ){
+            aux.type = Token.INTLITERAL;
+            
+            declaraciones.put(aux.variable,aux);
+        }                   
         finish(declarationPos);
         declarationAST = new VarDeclaration(iAST, tAST, declarationPos);
         }else{
         accept(Token.BECOMES);
         Expression eAST = parseExpression();
-        
+        aux.type = retorno.type;
+        declaraciones.put(aux.variable,aux);
         finish(declarationPos);
         declarationAST = new VarDeclarationEXP(iAST, eAST, declarationPos);
         }
@@ -987,11 +1025,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
       case Token.LOCAL:
       {
         acceptIt();
+        profundidad++;
         Declaration dAST = parseDeclaration();
         accept(Token.IN);
         Declaration d2AST = parseDeclaration();
         accept(Token.END);
-     
+        profundidad--;
         finish(declarationPos);
         declarationAST = new compoundDeclLocal(dAST,d2AST, declarationPos);
       }

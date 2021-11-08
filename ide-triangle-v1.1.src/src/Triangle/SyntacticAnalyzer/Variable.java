@@ -10,6 +10,7 @@ package Triangle.SyntacticAnalyzer;
  * @author Alexander
  */
 public class Variable {
-    public String variable;
-    public String type;
+    public String variable = "";
+    public int type = 0;
+    public int visibleAProfundidad =0;
 }
