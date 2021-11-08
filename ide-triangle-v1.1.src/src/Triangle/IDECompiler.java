@@ -87,12 +87,17 @@ public class IDECompiler {
         File file2 = new File(file);
         try{
             BufferedWriter bw = new BufferedWriter(new FileWriter(file2));
-            bw.write(html);
+            bw.write(html);//Aqui tira el error, un nullPointerException
             bw.close();
         } catch (IOException ioe) {
-          ioe.printStackTrace();
+            
+          //ioe.printStackTrace();
             System.out.println("Error al crear el HTML");
+        }catch(NullPointerException ne){
+           // ne.printStackTrace();
+           System.out.println("Error al crear el HTML, IDECompiler.java");
         }
+        
         return(success);
     }
       

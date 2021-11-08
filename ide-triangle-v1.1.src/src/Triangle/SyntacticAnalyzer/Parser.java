@@ -103,7 +103,8 @@ import Triangle.AbstractSyntaxTrees.compoundDeclRecursive;
 import java.util.ArrayList;
 
 public class Parser {
-
+  public ArrayList<String> caracteresdisponibles =new ArrayList<>();
+  public Variable retorno;
   private Scanner lexicalAnalyser;
   private ErrorReporter errorReporter;
   private Token currentToken ;
@@ -111,6 +112,7 @@ public class Parser {
 
   public Parser(Scanner lexer, ErrorReporter reporter) {
     lexicalAnalyser = lexer;
+    lexer.setParser(this);
     errorReporter = reporter;
     previousTokenPosition = new SourcePosition();
   }
@@ -451,20 +453,27 @@ Terminal parseCaseLiteral() throws SyntaxError {
         ArrayList<Command> commands= new ArrayList<>();
         ArrayList<Expression> expressions= new ArrayList<>();
         acceptIt();
-        expressions.add(parseExpression());
+        Expression e = parseExpression();
+        if(e instanceof BinaryExpression){
+        expressions.add(e);
         accept(Token.THEN);
         commands.add(parseCommand());
         while(Token.OR == currentToken.kind){
             accept(Token.OR);
-            expressions.add(parseExpression());
+            Expression ex = parseExpression();
+            if(e instanceof BinaryExpression){
+            expressions.add(ex);
             accept(Token.THEN);
             commands.add(parseCommand());
+            }else{syntacticError("\"%\" cannot start a command",
+            "Boolean expression expected");}
         }
         accept(Token.ELSE);
         commands.add(parseCommand());
         accept(Token.END);
         finish(commandPos);
         commandAST = new IfCommand(expressions,commands, commandPos);
+        }else{syntacticError("\"%\" cannot start a command","Boolean expression expected");}
       }
       break;
       /*
@@ -653,7 +662,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
     start(expressionPos);
 
     expressionAST = parsePrimaryExpression();
-     
+    
     while (currentToken.kind == Token.OPERATOR) {
       Operator opAST = parseOperator();
       Expression e2AST = parsePrimaryExpression();

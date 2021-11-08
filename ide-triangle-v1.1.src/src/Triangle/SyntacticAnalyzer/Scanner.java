@@ -16,7 +16,8 @@ package Triangle.SyntacticAnalyzer;
 
 
 public final class Scanner {
-
+  
+  Parser parser;
   private SourceFile sourceFile;
   private boolean debug;
 
@@ -219,5 +220,7 @@ public final class Scanner {
       System.out.println(tok);
     return tok;
   }
-
+  public void setParser(Parser p){
+    this.parser = p;
+  }
 }
