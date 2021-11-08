@@ -425,9 +425,26 @@ Terminal parseCaseLiteral() throws SyntaxError {
         if (currentToken.kind == Token.LPAREN) {
           acceptIt();
           ActualParameterSequence apsAST = parseActualParameterSequence();
-          if("putint".equals(r)&& retorno.type != Token.INTLITERAL){
+          if( "putint".equals(r)&& declaraciones.containsKey(retorno.variable)){
+            Variable aux = declaraciones.get(retorno.variable);
+            if(aux.visibleAProfundidad <= profundidad){
+                if (aux.type != Token.INTLITERAL){
+                    syntacticError("\"%\" cannot start a command","int expected here");
+                }
+            }else{ syntacticError("\"%\" cannot start a command","variable not visible");}
+          }else if("putint".equals(r)&& (retorno.type != Token.INTLITERAL) ){
               syntacticError("\"%\" cannot start a command","int expected here");
           }
+          if(retorno.type == Token.IDENTIFIER){
+          if( declaraciones.containsKey(retorno.variable)){
+            Variable aux = declaraciones.get(retorno.variable);
+            if(aux.visibleAProfundidad > profundidad){
+                    syntacticError("\"%\" cannot start a command","variable not visible");
+            }
+          }else{syntacticError("\"%\" cannot start a command","undeclared variablee");}
+          }
+          
+          
           accept(Token.RPAREN);
           finish(commandPos);
           commandAST = new CallCommand(iAST, apsAST, commandPos);
