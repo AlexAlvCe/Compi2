@@ -448,6 +448,8 @@ Terminal parseCaseLiteral() throws SyntaxError {
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad > profundidad){
                     syntacticError("\"%\" ","variable not visible");
+            }else if(aux.type == Token.PROC){
+                syntacticError("\"%\" it is a proc, it does not return any value  ",aux.variable);
             }
           }else{syntacticError("\"%\" ","undeclared variablee");}
           }
@@ -1012,13 +1014,22 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.PROC:
       {
         acceptIt();
+        Variable aux = new Variable();
         Identifier iAST = parseIdentifier();
+        aux.variable = retorno.variable;
+        aux.visibleAProfundidad = declarationPorfundidad;
         accept(Token.LPAREN);
+        profundidad++;
+        declarationPorfundidad++;
         FormalParameterSequence fpsAST = parseFormalParameterSequence();
         accept(Token.RPAREN);
         accept(Token.IS);
         Command cAST = parseCommand();
+        declarationPorfundidad--;
+        profundidad--;
         accept(Token.END);
+        aux.type = Token.PROC;
+        declaraciones.put(aux.variable, aux);
         finish(declarationPos);
         declarationAST = new ProcDeclaration(iAST, fpsAST, cAST, declarationPos);
       }
@@ -1233,10 +1244,23 @@ Terminal parseCaseLiteral() throws SyntaxError {
     switch (currentToken.kind) {
 
     case Token.IDENTIFIER:
-      {
+      {                   
+         Variable aux = new Variable();
         Identifier iAST = parseIdentifier();
+        aux.variable = retorno.variable;  
+        aux.visibleAProfundidad = declarationPorfundidad;
+        
         accept(Token.COLON);
         TypeDenoter tAST = parseTypeDenoter();
+        if(declaraciones.containsKey(aux.variable)){
+            //syntacticError("\"%\" is already in use",aux.variable);
+        }
+        if("Integer".equals(retorno.variable) ){
+            aux.type = Token.INTLITERAL;
+            
+            declaraciones.put(aux.variable,aux);
+        }
+        
         finish(formalPos);
         formalAST = new ConstFormalParameter(iAST, tAST, formalPos);
       }
