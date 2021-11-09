@@ -107,6 +107,7 @@ public class Parser {
   public Hashtable<String,Variable> declaraciones = new Hashtable<>();
   public Variable retorno =  new Variable();
   public int profundidad=0;
+  public int declarationPorfundidad = 0 ;
   private Scanner lexicalAnalyser;
   private ErrorReporter errorReporter;
   private Token currentToken ;
@@ -203,7 +204,7 @@ public class Parser {
       IL = new IntegerLiteral(spelling, previousTokenPosition);
       retorno.variable = spelling;
       retorno.type = Token.INTLITERAL;
-      retorno.visibleAProfundidad=profundidad;
+      retorno.visibleAProfundidad=declarationPorfundidad;
       currentToken = lexicalAnalyser.scan();
     } else {
       IL = null;
@@ -225,7 +226,7 @@ public class Parser {
       CL = new CharacterLiteral(spelling, previousTokenPosition);
       retorno.variable = spelling;
       retorno.type = Token.CHARLITERAL;
-      retorno.visibleAProfundidad=profundidad;
+      retorno.visibleAProfundidad=declarationPorfundidad;
       currentToken = lexicalAnalyser.scan();
     } else {
       CL = null;
@@ -250,7 +251,7 @@ public class Parser {
       currentToken = lexicalAnalyser.scan();
         retorno.variable=spelling;
         retorno.type = Token.IDENTIFIER;
-        retorno.visibleAProfundidad = profundidad;
+        retorno.visibleAProfundidad = declarationPorfundidad;
     } else {
       I = null;
       syntacticError("identifier expected here", "");
@@ -431,9 +432,9 @@ Terminal parseCaseLiteral() throws SyntaxError {
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad <= profundidad){
                 if (aux.type != Token.INTLITERAL){
-                    syntacticError("\"%\" cannot start a command","int expected here");
+                    syntacticError("\"%\" ","int expected here");
                 }
-            }else{ syntacticError("\"%\" cannot start a command","variable not visible");}
+            }else{ syntacticError("\"%\" ","variable not visible");}
           }else if("putint".equals(r)&& (retorno.type != Token.INTLITERAL) ){
               syntacticError("\"%\" ","int expected here");
           }else if("getint".equals(r)&& declaraciones.containsKey(retorno.variable)){
@@ -484,8 +485,10 @@ Terminal parseCaseLiteral() throws SyntaxError {
       {
         acceptIt();
         profundidad++;
+        declarationPorfundidad++;
         Declaration dAST = parseDeclaration();
         accept(Token.IN);
+        declarationPorfundidad--;
         Command cAST = parseCommand();
         accept(Token.END);
         profundidad--;
@@ -952,7 +955,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         Variable aux = new Variable();
         Identifier iAST = parseIdentifier();
         aux.variable = retorno.variable;
-        aux.visibleAProfundidad = profundidad;
+        aux.visibleAProfundidad = declarationPorfundidad;
         accept(Token.IS);
         Expression eAST = parseExpression();
         aux.type = retorno.type;
@@ -977,7 +980,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         Identifier iAST = parseIdentifier();
         aux.variable = retorno.variable;
           
-        aux.visibleAProfundidad = profundidad;
+        aux.visibleAProfundidad = declarationPorfundidad;
         if (Token.COLON ==currentToken.kind ){
         accept(Token.COLON);
         TypeDenoter tAST = parseTypeDenoter();
@@ -1081,8 +1084,10 @@ Terminal parseCaseLiteral() throws SyntaxError {
       {
         acceptIt();
         profundidad++;
+        declarationPorfundidad++;
         Declaration dAST = parseDeclaration();
         accept(Token.IN);
+        declarationPorfundidad--;
         Declaration d2AST = parseDeclaration();
         accept(Token.END);
         profundidad--;
