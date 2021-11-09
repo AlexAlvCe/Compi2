@@ -435,16 +435,20 @@ Terminal parseCaseLiteral() throws SyntaxError {
                 }
             }else{ syntacticError("\"%\" cannot start a command","variable not visible");}
           }else if("putint".equals(r)&& (retorno.type != Token.INTLITERAL) ){
-              syntacticError("\"%\" cannot start a command","int expected here");
+              syntacticError("\"%\" ","int expected here");
+          }else if("getint".equals(r)&& declaraciones.containsKey(retorno.variable)){
+              if(declaraciones.get(retorno.variable).constant){
+                  syntacticError("\"%\"  is a constant" , retorno.variable);
+              }
           }
           if(retorno.type == Token.IDENTIFIER){
               
           if( declaraciones.containsKey(retorno.variable)   ){
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad > profundidad){
-                    syntacticError("\"%\" cannot start a command","variable not visible");
+                    syntacticError("\"%\" ","variable not visible");
             }
-          }else{syntacticError("\"%\" cannot start a command","undeclared variablee");}
+          }else{syntacticError("\"%\" ","undeclared variablee");}
           }
           
           
@@ -459,7 +463,11 @@ Terminal parseCaseLiteral() throws SyntaxError {
           }
 
         } else {
-
+          if (declaraciones.containsKey(r)){
+              if(declaraciones.get(r).constant){
+                  syntacticError("\"%\"  is a constant" , retorno.variable);
+              }
+          }
           Vname vAST = parseRestOfVname(iAST);
           accept(Token.BECOMES);
           Expression eAST = parseExpression();
@@ -720,8 +728,13 @@ Terminal parseCaseLiteral() throws SyntaxError {
             "");
       }
       if(retorno.type != aux.type){
-        syntacticError("\"%\" ",
-        "Non congruent Types");
+          System.err.println("auxType:"+aux.variable+" "+aux.type + "Return type:"+retorno.variable+" "+retorno.type);
+         if(declaraciones.containsKey(retorno.variable)){
+             if(declaraciones.get(retorno.variable).type != aux.type){
+                 syntacticError("\"%\" ", "Non congruent Types");
+             }
+         }
+         else{syntacticError("\"%\" ", "Non congruent Types");}
       }
       
       expressionAST = new BinaryExpression (expressionAST, opAST, e2AST,
@@ -943,6 +956,11 @@ Terminal parseCaseLiteral() throws SyntaxError {
         accept(Token.IS);
         Expression eAST = parseExpression();
         aux.type = retorno.type;
+        if(declaraciones.containsKey(retorno.variable)){
+            aux.type = declaraciones.get(retorno.variable).type;
+        }
+        
+        aux.constant = true;
         declaraciones.put(aux.variable,aux);
         finish(declarationPos);
         declarationAST = new ConstDeclaration(iAST, eAST, declarationPos);
@@ -973,6 +991,9 @@ Terminal parseCaseLiteral() throws SyntaxError {
         }else{
         accept(Token.BECOMES);
         Expression eAST = parseExpression();
+        if(declaraciones.containsKey(aux.variable)){
+            //syntacticError("\"%\" is already in use",aux.variable);
+        }
         aux.type = retorno.type;
         declaraciones.put(aux.variable,aux);
         finish(declarationPos);

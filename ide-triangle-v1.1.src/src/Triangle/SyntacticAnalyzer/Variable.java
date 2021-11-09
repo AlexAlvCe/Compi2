@@ -13,4 +13,5 @@ public class Variable {
     public String variable = "";
     public int type = 0;
     public int visibleAProfundidad =0;
+    public boolean constant = false;
 }
