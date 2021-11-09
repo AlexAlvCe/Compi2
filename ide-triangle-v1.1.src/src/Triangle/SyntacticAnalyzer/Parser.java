@@ -105,7 +105,10 @@ import java.util.Hashtable;
 
 public class Parser {
   public Hashtable<String,Variable> declaraciones = new Hashtable<>();
+  public Hashtable<String,ProcFunc> procYFuncs = new Hashtable<>();
   public Variable retorno =  new Variable();
+  public ProcFunc retornoProFunc =  new ProcFunc();
+  public ArrayList<Integer> params= new ArrayList<>();
   public int profundidad=0;
   public int declarationPorfundidad = 0 ;
   private Scanner lexicalAnalyser;
@@ -797,9 +800,20 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.IDENTIFIER:
       {
         Identifier iAST= parseIdentifier();
+          String r = retorno.variable; 
         if (currentToken.kind == Token.LPAREN) {
+          
           acceptIt();
+          params = new ArrayList<>();
           ActualParameterSequence apsAST = parseActualParameterSequence();
+          if(procYFuncs.containsKey(r)){
+              if(!procYFuncs.get(r).typeparam.toString().equals(params.toString())){syntacticError("\"%\" wrong parameter",r);}
+          }else{
+              ProcFunc p = new ProcFunc();
+              p.variable = r;
+              p.typeparam = params;
+              procYFuncs.put(r, p);
+          }
           accept(Token.RPAREN);
           finish(expressionPos);
           expressionAST = new CallExpression(iAST, apsAST, expressionPos);
@@ -1144,9 +1158,16 @@ Terminal parseCaseLiteral() throws SyntaxError {
        case Token.PROC:
       {
         acceptIt();
+        
         Identifier iAST = parseIdentifier();
+        retornoProFunc.variable= retorno.variable;
+        retornoProFunc.type = Token.PROC;
         accept(Token.LPAREN);
         FormalParameterSequence fpsAST = parseFormalParameterSequence();
+        retornoProFunc.typeparam = params;
+        params = new ArrayList<>();
+        retornoProFunc.visibleAProfundidad=declarationPorfundidad;
+        procYFuncs.put(retornoProFunc.variable, retornoProFunc);
         accept(Token.RPAREN);
         accept(Token.IS);
         Command cAST = parseCommand();
@@ -1159,13 +1180,36 @@ Terminal parseCaseLiteral() throws SyntaxError {
     default:
       {
         accept(Token.FUNC);
+        
         Identifier iAST = parseIdentifier();
+        retornoProFunc.variable= retorno.variable;
         accept(Token.LPAREN);
+        params = new ArrayList<>();
         FormalParameterSequence fpsAST = parseFormalParameterSequence();
+       
+        retornoProFunc.typeparam = params;
+        params = new ArrayList<>();
+        if(procYFuncs.containsKey(retornoProFunc.variable)){
+            System.err.println("params to "+retornoProFunc.variable+" :"+retornoProFunc.typeparam);
+            System.err.println("retparams:"+procYFuncs.get(retornoProFunc.variable).typeparam);
+            if(!procYFuncs.get(retornoProFunc.variable).typeparam.toString().equals(retornoProFunc.typeparam.toString())){syntacticError("\"%\" wrong parameter",retornoProFunc.variable);}
+        }
         accept(Token.RPAREN);
         accept(Token.COLON);
+        
         TypeDenoter tAST = parseTypeDenoter();
+        if("Integer".equals(retorno.variable) ){
+            retornoProFunc.type =  Token.INTLITERAL;
+        }
+        if("Boolean".equals(retorno.variable) ){
+            retornoProFunc.type =  -1;
+            
+        }        
+        retornoProFunc.visibleAProfundidad=declarationPorfundidad;
+        procYFuncs.put(retornoProFunc.variable, retornoProFunc);
+        
         accept(Token.IS);
+        
         Expression eAST = parseExpression();
         finish(declarationPos);
         declarationAST = new FuncDeclaration(iAST, fpsAST, tAST, eAST,
@@ -1185,7 +1229,10 @@ Terminal parseCaseLiteral() throws SyntaxError {
     start(parseProfuncsPos);
     
       ArrayList<Declaration> listPAST = new ArrayList<>();
+      // 'Anadir a lista de procyFuncs'
+      System.err.println("ver linea 1215");
       listPAST.add(parseProfunc());
+      
     do{
           accept(Token.OR);
           listPAST.add(parseProfunc());
@@ -1257,7 +1304,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
         }
         if("Integer".equals(retorno.variable) ){
             aux.type = Token.INTLITERAL;
-            
+            params.add(Token.INTLITERAL);
+            declaraciones.put(aux.variable,aux);
+        }
+        if("Boolean".equals(retorno.variable) ){
+            aux.type = -1;
+            params.add(-1);
             declaraciones.put(aux.variable,aux);
         }
         
@@ -1272,6 +1324,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
         Identifier iAST = parseIdentifier();
         accept(Token.COLON);
         TypeDenoter tAST = parseTypeDenoter();
+        if("Integer".equals(retorno.variable) ){
+            params.add(Token.INTLITERAL);
+        }
+        if("Boolean".equals(retorno.variable) ){
+            params.add(-1);
+        }
         finish(formalPos);
         formalAST = new VarFormalParameter(iAST, tAST, formalPos);
       }
@@ -1279,6 +1337,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
 
     case Token.PROC:
       {
+        params.add(Token.PROC);//No se si funcione
         acceptIt();
         Identifier iAST = parseIdentifier();
         accept(Token.LPAREN);
@@ -1291,6 +1350,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
 
     case Token.FUNC:
       {
+        params.add(Token.FUNC);
         acceptIt();
         Identifier iAST = parseIdentifier();
         accept(Token.LPAREN);
@@ -1369,6 +1429,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.LCURLY:
       {
         Expression eAST = parseExpression();
+        params.add(retorno.type);
         finish(actualPos);
         actualAST = new ConstActualParameter(eAST, actualPos);
       }
@@ -1387,6 +1448,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
       {
         acceptIt();
         Identifier iAST = parseIdentifier();
+        params.add(retorno.type);
         finish(actualPos);
         actualAST = new ProcActualParameter(iAST, actualPos);
       }
@@ -1396,6 +1458,13 @@ Terminal parseCaseLiteral() throws SyntaxError {
       {
         acceptIt();
         Identifier iAST = parseIdentifier();
+        if(procYFuncs.containsKey(retorno.variable)){
+            params.add(procYFuncs.get(retorno.variable).type);
+        }else{
+            syntacticError("\"%\" Procedmiento o funcion no disponible",
+        currentToken.spelling);
+        }
+        
         finish(actualPos);
         actualAST = new FuncActualParameter(iAST, actualPos);
       }
