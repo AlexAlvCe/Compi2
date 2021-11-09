@@ -1027,12 +1027,19 @@ Terminal parseCaseLiteral() throws SyntaxError {
     case Token.FUNC:
       {
         acceptIt();
+        Variable aux = new Variable();
         Identifier iAST = parseIdentifier();
+        aux.variable = retorno.variable;
+        aux.visibleAProfundidad = declarationPorfundidad;
         accept(Token.LPAREN);
         FormalParameterSequence fpsAST = parseFormalParameterSequence();
         accept(Token.RPAREN);
         accept(Token.COLON);
         TypeDenoter tAST = parseTypeDenoter();
+        if("Integer".equals(retorno.variable)){
+            aux.type = Token.INTLITERAL;
+        }
+        declaraciones.put(aux.variable, aux);
         accept(Token.IS);
         Expression eAST = parseExpression();
         finish(declarationPos);
