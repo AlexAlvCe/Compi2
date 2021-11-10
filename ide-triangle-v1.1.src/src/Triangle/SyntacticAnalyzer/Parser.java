@@ -102,6 +102,9 @@ import Triangle.AbstractSyntaxTrees.compoundDeclLocal;
 import Triangle.AbstractSyntaxTrees.compoundDeclRecursive;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class Parser {
   public Hashtable<String,Variable> declaraciones = new Hashtable<>();
@@ -161,6 +164,11 @@ public class Parser {
     SourcePosition pos = currentToken.position;
     errorReporter.reportError(messageTemplate, tokenQuoted, pos);
     throw(new SyntaxError());
+  }
+  void contextualError(String messageTemplate, String tokenQuoted) throws SyntaxError {
+    SourcePosition pos = currentToken.position;
+    errorReporter.reportError(messageTemplate, tokenQuoted, pos);
+    
   }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,7 +387,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
       currentToken = lexicalAnalyser.scan();
     } else {
       CL = null;
-      syntacticError("integer literal expected here", "");
+      contextualError("integer literal expected here", "");
     }
     return CL;
   }  
@@ -435,14 +443,14 @@ Terminal parseCaseLiteral() throws SyntaxError {
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad <= profundidad){
                 if (aux.type != Token.INTLITERAL){
-                    syntacticError("\"%\" ","int expected here");
+                    contextualError("\"%\" ","int expected here");
                 }
-            }else{ syntacticError("\"%\" ","variable not visible");}
+            }else{ contextualError("\"%\" ","variable not visible");}
           }else if("putint".equals(r)&& (retorno.type != Token.INTLITERAL) ){
-              syntacticError("\"%\" ","int expected here");
+              contextualError("\"%\" ","int expected here");
           }else if("getint".equals(r)&& declaraciones.containsKey(retorno.variable)){
               if(declaraciones.get(retorno.variable).constant){
-                  syntacticError("\"%\"  is a constant" , retorno.variable);
+                  contextualError("\"%\"  is a constant" , retorno.variable);
               }
           }
           if(retorno.type == Token.IDENTIFIER){
@@ -450,11 +458,11 @@ Terminal parseCaseLiteral() throws SyntaxError {
           if( declaraciones.containsKey(retorno.variable)   ){
             Variable aux = declaraciones.get(retorno.variable);
             if(aux.visibleAProfundidad > profundidad){
-                    syntacticError("\"%\" ","variable not visible");
+                    contextualError("\"%\" ","variable not visible");
             }else if(aux.type == Token.PROC){
-                syntacticError("\"%\" it is a proc, it does not return any value  ",aux.variable);
+                contextualError("\"%\" it is a proc, it does not return any value  ",aux.variable);
             }
-          }else{syntacticError("\"%\" ","undeclared variablee");}
+          }else{contextualError("\"%\" ",retorno.variable+" undeclared variablee");}
           }
           
           
@@ -471,7 +479,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         } else {
           if (declaraciones.containsKey(r)){
               if(declaraciones.get(r).constant){
-                  syntacticError("\"%\"  is a constant" , retorno.variable);
+                  contextualError("\"%\"  is a constant" , retorno.variable);
               }
           }
           Vname vAST = parseRestOfVname(iAST);
@@ -497,6 +505,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         Command cAST = parseCommand();
         accept(Token.END);
         profundidad--;
+        updateVars();
         finish(commandPos);
         commandAST = new LetCommand(dAST, cAST, commandPos);
       }
@@ -522,7 +531,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
             expressions.add(ex);
             accept(Token.THEN);
             commands.add(parseCommand());
-            }else{syntacticError("\"%\" cannot start a command",
+            }else{contextualError("\"%\" ",
             "Boolean expression expected");}
         }
         accept(Token.ELSE);
@@ -530,7 +539,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         accept(Token.END);
         finish(commandPos);
         commandAST = new IfCommand(expressions,commands, commandPos);
-        }else{syntacticError("\"%\" cannot start a command","Boolean expression expected");}
+        }else{contextualError("\"%\" ","Boolean expression expected");}
       }
       break;
       /*
@@ -720,7 +729,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
     Variable aux= new Variable();
     expressionAST = parsePrimaryExpression();
     if(retorno.type == Token.IDENTIFIER && !declaraciones.containsKey(retorno.variable)){
-      syntacticError(" Undeclared variable",
+      contextualError(retorno.variable+" Undeclared variable",
         "");
     }
     if (declaraciones.containsKey(retorno.variable)){
@@ -732,17 +741,17 @@ Terminal parseCaseLiteral() throws SyntaxError {
       Operator opAST = parseOperator();
       Expression e2AST = parsePrimaryExpression();
       if(retorno.type == Token.IDENTIFIER && !declaraciones.containsKey(retorno.variable)){
-            syntacticError("Undeclared variable",
+            contextualError(retorno.variable+" Undeclared variable",
             "");
       }
       if(retorno.type != aux.type){
           System.err.println("auxType:"+aux.variable+" "+aux.type + "Return type:"+retorno.variable+" "+retorno.type);
          if(declaraciones.containsKey(retorno.variable)){
              if(declaraciones.get(retorno.variable).type != aux.type){
-                 syntacticError("\"%\" ", "Non congruent Types");
+                 contextualError("\"%\" ", "Non congruent Types");
              }
          }
-         else{syntacticError("\"%\" ", "Non congruent Types");}
+         else{contextualError("\"%\" ", "Non congruent Types");}
       }
       
       expressionAST = new BinaryExpression (expressionAST, opAST, e2AST,
@@ -807,12 +816,15 @@ Terminal parseCaseLiteral() throws SyntaxError {
           params = new ArrayList<>();
           ActualParameterSequence apsAST = parseActualParameterSequence();
           if(procYFuncs.containsKey(r)){
-              if(!procYFuncs.get(r).typeparam.toString().equals(params.toString())){syntacticError("\"%\" wrong parameter",r);}
+              if(r.equals(procYFuncs.get("f").variable))
+              if(!procYFuncs.get(r).typeparam.toString().equals(params.toString())){contextualError("\"%\" wrong parameter",procYFuncs.get(r).variable);}
           }else{
               ProcFunc p = new ProcFunc();
               p.variable = r;
               p.typeparam = params;
-              procYFuncs.put(r, p);
+              
+              procYFuncs.put(p.variable, p);
+             
           }
           accept(Token.RPAREN);
           finish(expressionPos);
@@ -1004,7 +1016,15 @@ Terminal parseCaseLiteral() throws SyntaxError {
             aux.type = Token.INTLITERAL;
             
             declaraciones.put(aux.variable,aux);
-        }                   
+        }
+        if("Boolean".equals(retorno.variable)){
+            aux.type = -1;
+            declaraciones.put(aux.variable,aux);
+        }
+        if("Char".equals(retorno.variable)){
+            aux.type = Token.CHARLITERAL;
+            declaraciones.put(aux.variable,aux);
+        }
         finish(declarationPos);
         declarationAST = new VarDeclaration(iAST, tAST, declarationPos);
         }else{
@@ -1041,6 +1061,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         Command cAST = parseCommand();
         declarationPorfundidad--;
         profundidad--;
+        updateVars();
         accept(Token.END);
         aux.type = Token.PROC;
         declaraciones.put(aux.variable, aux);
@@ -1063,6 +1084,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
         TypeDenoter tAST = parseTypeDenoter();
         if("Integer".equals(retorno.variable)){
             aux.type = Token.INTLITERAL;
+        }
+        if("Boolean".equals(retorno.variable)){
+            aux.type = -1;
+        }
+        if("Char".equals(retorno.variable)){
+            aux.type = Token.CHARLITERAL;
         }
         declaraciones.put(aux.variable, aux);
         accept(Token.IS);
@@ -1123,6 +1150,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         Declaration d2AST = parseDeclaration();
         accept(Token.END);
         profundidad--;
+        updateVars();
         finish(declarationPos);
         declarationAST = new compoundDeclLocal(dAST,d2AST, declarationPos);
       }
@@ -1158,7 +1186,8 @@ Terminal parseCaseLiteral() throws SyntaxError {
        case Token.PROC:
       {
         acceptIt();
-        
+        profundidad++;
+        declarationPorfundidad++;
         Identifier iAST = parseIdentifier();
         retornoProFunc.variable= retorno.variable;
         retornoProFunc.type = Token.PROC;
@@ -1168,9 +1197,13 @@ Terminal parseCaseLiteral() throws SyntaxError {
         params = new ArrayList<>();
         retornoProFunc.visibleAProfundidad=declarationPorfundidad;
         procYFuncs.put(retornoProFunc.variable, retornoProFunc);
+       
         accept(Token.RPAREN);
         accept(Token.IS);
         Command cAST = parseCommand();
+        profundidad--;
+        declarationPorfundidad--;
+        updateVars();
         accept(Token.END);
         finish(declarationPos);
         declarationAST = new ProcDeclaration(iAST, fpsAST, cAST, declarationPos);
@@ -1192,8 +1225,13 @@ Terminal parseCaseLiteral() throws SyntaxError {
         if(procYFuncs.containsKey(retornoProFunc.variable)){
             System.err.println("params to "+retornoProFunc.variable+" :"+retornoProFunc.typeparam);
             System.err.println("retparams:"+procYFuncs.get(retornoProFunc.variable).typeparam);
-            if(!procYFuncs.get(retornoProFunc.variable).typeparam.toString().equals(retornoProFunc.typeparam.toString())){syntacticError("\"%\" wrong parameter",retornoProFunc.variable);}
+            if(procYFuncs.get(retornoProFunc.variable).define){
+                contextualError("\"%\": id already in use",retornoProFunc.variable);
+            }
+            if(!procYFuncs.get(retornoProFunc.variable).typeparam.toString().equals(retornoProFunc.typeparam.toString())){contextualError("\"%\" wrong parameter",retornoProFunc.variable);
+            }
         }
+        
         accept(Token.RPAREN);
         accept(Token.COLON);
         
@@ -1204,8 +1242,12 @@ Terminal parseCaseLiteral() throws SyntaxError {
         if("Boolean".equals(retorno.variable) ){
             retornoProFunc.type =  -1;
             
-        }        
+        }
+        if("Char".equals(retorno.variable)){
+            retornoProFunc.type = Token.CHARLITERAL;
+        }
         retornoProFunc.visibleAProfundidad=declarationPorfundidad;
+        retornoProFunc.define = true;
         procYFuncs.put(retornoProFunc.variable, retornoProFunc);
         
         accept(Token.IS);
@@ -1230,7 +1272,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
     
       ArrayList<Declaration> listPAST = new ArrayList<>();
       // 'Anadir a lista de procyFuncs'
-      System.err.println("ver linea 1215");
+      System.err.println("ver linea 1240");
       listPAST.add(parseProfunc());
       
     do{
@@ -1312,6 +1354,11 @@ Terminal parseCaseLiteral() throws SyntaxError {
             params.add(-1);
             declaraciones.put(aux.variable,aux);
         }
+        if("Char".equals(retorno.variable)){
+            aux.type =  Token.CHARLITERAL;
+            params.add(Token.CHARLITERAL);
+            declaraciones.put(aux.variable,aux);
+        }
         
         finish(formalPos);
         formalAST = new ConstFormalParameter(iAST, tAST, formalPos);
@@ -1329,6 +1376,9 @@ Terminal parseCaseLiteral() throws SyntaxError {
         }
         if("Boolean".equals(retorno.variable) ){
             params.add(-1);
+        }
+        if("Char".equals(retorno.variable)){
+            params.add(Token.CHARLITERAL);
         }
         finish(formalPos);
         formalAST = new VarFormalParameter(iAST, tAST, formalPos);
@@ -1550,5 +1600,16 @@ Terminal parseCaseLiteral() throws SyntaxError {
       fieldAST = new SingleFieldTypeDenoter(iAST, tAST, fieldPos);
     }
     return fieldAST;
+  }
+  public void updateVars(){
+      
+     
+      for(Iterator<Variable> iterator = declaraciones.values().iterator(); iterator.hasNext(); ) {
+        Variable var = iterator.next();
+        if(var.visibleAProfundidad > profundidad){
+             System.err.println("var:"+var.variable);
+              iterator.remove();
+        }
+      }
   }
 }

@@ -16,5 +16,6 @@ public class ProcFunc {
     public int type = 0;
     public int visibleAProfundidad =0;
     public ArrayList<Integer> typeparam= new ArrayList<>();
+    public boolean define =  false;
     public boolean funcion = false;
 }
