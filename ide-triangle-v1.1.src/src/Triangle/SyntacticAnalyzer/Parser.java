@@ -520,7 +520,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         ArrayList<Expression> expressions= new ArrayList<>();
         acceptIt();
         Expression e = parseExpression();
-        if(e instanceof BinaryExpression){
+        if(!(e instanceof BinaryExpression)){contextualError("\"%\" ","Boolean expression expected");}
         expressions.add(e);
         accept(Token.THEN);
         commands.add(parseCommand());
@@ -539,7 +539,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
         accept(Token.END);
         finish(commandPos);
         commandAST = new IfCommand(expressions,commands, commandPos);
-        }else{contextualError("\"%\" ","Boolean expression expected");}
+        
       }
       break;
       /*
@@ -569,6 +569,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
                 {
                 acceptIt();
                 Expression expAST = parseExpression();
+                if(!(expAST instanceof BinaryExpression)){contextualError("\"%\" ","Boolean expression expected");}
                 accept(Token.DO);
                 Command cAST = parseCommand();
                 accept(Token.END);
@@ -581,6 +582,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
                 {
                 acceptIt();
                 Expression EXP = parseExpression();
+                if(!(EXP instanceof BinaryExpression)){contextualError("\"%\" ","Boolean expression expected");}
                 accept(Token.DO);
                 Command cAST = parseCommand();
                 accept(Token.END);
@@ -595,11 +597,14 @@ Terminal parseCaseLiteral() throws SyntaxError {
                  if (currentToken.kind == Token.WHILE){
                     acceptIt();
                     Expression EXP = parseExpression();
+                    if(!(EXP instanceof BinaryExpression)){contextualError("\"%\" ","Boolean expression expected");}
                     commandAST = new WhileCommand(EXP, cAST, commandPos);
                     accept(Token.END);
                  }else if(currentToken.kind == Token.UNTIL){
                      acceptIt();
                     Expression EXP = parseExpression();
+                    if(!(EXP instanceof BinaryExpression)){contextualError("\"%\" ","Boolean expression expected");}
+        
                     commandAST = new WhileCommand(EXP, cAST, commandPos);
                     accept(Token.END);
                  }
@@ -610,6 +615,13 @@ Terminal parseCaseLiteral() throws SyntaxError {
                 {
                     acceptIt();
                     Identifier iAST = parseIdentifier();
+                    Variable a =  new  Variable();
+                    profundidad++;
+                    declarationPorfundidad++;
+                    a.variable = retorno.variable;
+                    a.type = Token.INTLITERAL;
+                    a.visibleAProfundidad = declarationPorfundidad;
+                    declaraciones.put(a.variable+"f", a);
                     if (currentToken.kind == Token.BECOMES){
                         acceptIt();
                         accept(Token.RANGE);
@@ -634,6 +646,7 @@ Terminal parseCaseLiteral() throws SyntaxError {
                         }else if(currentToken.kind == Token.UNTIL){
                             acceptIt();
                             Expression EXP3 = parseExpression();
+                            if(!(EXP3 instanceof BinaryExpression)){contextualError("\"%\" ","Boolean expression expected");} 
                             accept(Token.DO);
                             Command com1 = parseCommand();
                             accept(Token.END);
@@ -647,6 +660,9 @@ Terminal parseCaseLiteral() throws SyntaxError {
                         accept(Token.END);
                         commandAST = new ForInCommand(iAST,EXP3,com1,commandPos);
                     }
+                    profundidad--;
+                    declarationPorfundidad--;
+                    updateVars();
                 }
                 break;
         }
